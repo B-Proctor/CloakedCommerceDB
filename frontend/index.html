@@ -1,12 +1,55 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>CloakedCommerceDB</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloaked Commerce - Home</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Override styles for home page paragraphs and headings */
+        main p {
+            width: 65%;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 1.5rem;
+        }
+        main h3 {
+            width: 65%;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #4a4a4a;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to CloakedCommerceDB</h1>
-    <a href="register.html">Register</a> |
-    <a href="login.html">Login</a>
+    <header>
+        <h1>Cloaked Commerce</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="login.html">Login</a></li>
+                <li><a href="register.html">Register</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Welcome to Cloaked Commerce</h2>
+        
+        <h3>What Cloaked Commerce Does</h3>
+        <p>
+            Cloaked Commerce lets two pairs of people trade items secretly, without knowing each other’s names. For example, if you (person X) have a bicycle (P) and want a book (E), but the person who wants your bicycle (person A) doesn’t have a book, we connect their partner (person B) who has the book with your partner (person Y) who needs it. This way, you trade your bicycle with person A, and person B trades the book with your partner Y, all while keeping everyone’s identity private.
+        </p>
+        
+        <h3>How Cloaked Commerce Works</h3>
+        <p>
+            You (person X) sign up and post anonymously that you have a bicycle (P) to trade for a book (E), and say your partner Y will receive the book. Person A signs up and posts they need a bicycle and can offer a book through their partner B. When we find this match, we create a 16-digit hash code as a secret key. We send the first 8 digits to person A and the last 8 digits to your partner Y. You (X) send the bicycle to us with the full 16-digit hash code. Then, person A gives their 8 digits to their partner B, who sends the book to us with those 8 digits.
+        </p>
+        <p>
+            Once we have both the bicycle and the book, we ask your partner Y to send us their 8 digits of the hash code. We combine person A’s 8 digits and Y’s 8 digits to check if it matches the full 16-digit hash code. If it does, we send the bicycle to person A and the book to your partner Y. To keep it fair, we use a list that says how much a bicycle and book are worth—for example, if sending the bicycle costs a little, we make sure the book’s value covers it. This way, everyone gets a fair trade, stays private, and the exchange is safe. Sign up to start trading!
+        </p>
+    </main>
 </body>
 </html>
