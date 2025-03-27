@@ -70,3 +70,12 @@ CREATE TABLE IF NOT EXISTS Transactions (
     FOREIGN KEY (e_product_id) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+INSERT INTO Products (product_name, description, cost_c_prime, cost_c_double_prime) VALUES
+('Copper Ore', 'Raw copper ore for smelting.', 8.00, 2.00),
+('Timber', 'Freshly cut timber logs.', 10.00, 3.00),
+('Leather', 'Tanned leather for crafting.', 15.00, 5.00),
+('Wheat', 'Harvested wheat grain.', 5.00, 1.50),
+('Spices', 'Rare spices used in trade.', 20.00, 7.00),
+('Cloth', 'Simple woven cloth.', 12.00, 4.00),
+('Stone Blocks', 'Used for construction.', 6.00, 2.50),
+('Wool', 'Sheep wool for textile production.', 7.00, 3.00);
