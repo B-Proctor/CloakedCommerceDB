@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Barter Post</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h2>Create New Barter Post</h2>
+    <form action="/barter/post" method="POST">
+        <input name="user_id" placeholder="Your User ID" required><br>
+        <input name="partner_id" placeholder="Partner's User ID" required><br>
+        <input name="product_offered" placeholder="Product Offered ID" required><br>
+        <input name="amount_offered" placeholder="Amount Offered" required><br>
+        <input name="product_requested" placeholder="Product Requested ID" required><br>
+        <input name="amount_requested" placeholder="Amount Requested" required><br>
+        <button type="submit">Submit Post</button>
+    </form>
+</body>
+</html>

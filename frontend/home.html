@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Profile</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="navbar.js" defer></script>
+</head>
+<body>
+
+
+    <!-- Profile Content -->
+    <main class="profile-container">
+        <h2>Your Profile</h2>
+        <div id="profile"></div>
+    </main>
+
+    <!-- Profile Dropdown Session Fetch -->
+    <script>
+        fetch('/auth/session')
+            .then(res => res.json())
+            .then(user => {
+                const nav = document.getElementById('nav-right');
+                if (user && user.username) {
+                    nav.innerHTML = `
+                <div class="profile-menu">
+                  <span>Hello, ${user.username} ▾</span>
+                  <div class="profile-dropdown">
+                    <a href="home.html">Profile</a>
+                    <a href="/auth/logout">Logout</a>
+                  </div>
+                </div>
+              `;
+                } else {
+                    nav.innerHTML = '<a href="login.html">Login</a> <a href="register.html">Register</a>';
+                }
+            });
+    </script>
+
+    <!-- Profile Data Script -->
+    <script>
+        fetch('/dashboard')
+            .then(res => res.json())
+            .then(data => {
+                const profile = document.getElementById('profile');
+                const unfinished = data.posts.filter(p => !p.is_fulfilled);
+                const finished = data.trades.filter(t => t.completed);
+
+                profile.innerHTML = `
+              <div class="card">
+                <h3>Anonymous Hash Key:</h3>
+                <p class="mono">${data.user.hash_key}</p>
+              </div>
+
+              <div class="card">
+                <h3>Current (Unfinished) Barters</h3>
+                <ul>
+                  ${unfinished.length ? unfinished.map(p => `
+                    <li>Post #${p.post_id}: Offering Product ${p.product_offered} → Requesting Product ${p.product_requested}</li>
+                  `).join('') : '<li>None</li>'}
+                </ul>
+              </div>
+
+              <div class="card">
+                <h3>Past Barters</h3>
+                <ul>
+                  ${finished.length ? finished.map(t => `
+                    <li>Transaction #${t.transaction_id}: Exchange Code ${t.hash_code}</li>
+                  `).join('') : '<li>None</li>'}
+                </ul>
+              </div>
+            `;
+            });
+    </script>
+
+</body>
+</html>

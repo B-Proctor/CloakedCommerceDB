@@ -1,65 +1,69 @@
 const express = require('express');
-const router = express.Router();
-const db = require('../db');
 const bcrypt = require('bcrypt');
-const crypto = require('crypto');
+const db = require('../db');
 
-// Generate 16-character hash key
-function generateHashKey() {
-    return crypto.randomBytes(8).toString('hex'); // 16 hex characters
-}
+const router = express.Router();
 
-// REGISTER
+// Register
 router.post('/register', async (req, res) => {
     const { username, password } = req.body;
+    const hash = await bcrypt.hash(password, 10);
 
-    if (!username || !password) {
-        return res.status(400).send('Missing fields');
-    }
+    const hash_key = require('crypto').randomBytes(8).toString('hex'); //  Generate 16-char anonymous hash
 
-    const hashKey = generateHashKey();
-    const password_hash = await bcrypt.hash(password, 10);
+    const sql = `
+        INSERT INTO Users (username, password_hash, hash_key)
+        VALUES (?, ?, ?)
+    `;
 
-    const query = 'INSERT INTO Users (username, password_hash, role, hash_key) VALUES (?, ?, ?, ?)';
-    const values = [username, password_hash, 'trader', hashKey];
-
-    db.query(query, values, (err, result) => {
+    db.query(sql, [username, hash, hash_key], (err) => {
         if (err) {
-            console.error("Register error:", err);
-            return res.status(500).send('Registration failed. Username may already exist.');
+            console.error('Register error:', err);
+            return res.status(500).send('Registration failed.');
         }
-        res.redirect('/login.html');
+        res.redirect("/login.html")
     });
 });
 
-// LOGIN
+// Login
 router.post('/login', (req, res) => {
     const { username, password } = req.body;
 
     db.query('SELECT * FROM Users WHERE username = ?', [username], async (err, results) => {
-        if (err) {
-            console.error("Login DB error:", err);
-            return res.status(500).send('Server error.');
-        }
-
-        if (results.length === 0) {
-            return res.status(401).send('Invalid credentials.');
+        if (err || results.length === 0) {
+            alert('Login failed. Check your credentials.');
         }
 
         const user = results[0];
-        const match = await bcrypt.compare(password, user.password_hash);
+        const valid = await bcrypt.compare(password, user.password_hash);
 
-        if (match) {
+        if (valid) {
             req.session.user = {
-                id: user.user_id,
+                user_id: user.user_id,
                 username: user.username,
                 role: user.role,
                 hash_key: user.hash_key
             };
-            res.send(`<h3>Welcome, ${user.username}!</h3><p>Your hash_key is: ${user.hash_key}</p>`);
+            res.redirect("/index.html")
         } else {
-            res.status(401).send('Invalid credentials.');
+            res.status(401).send('Invalid username or password.');
         }
+    });
+});
+
+// Session check
+router.get('/session', (req, res) => {
+    if (req.session.user) {
+        res.json(req.session.user);
+    } else {
+        res.status(401).json({ error: 'Not logged in' });
+    }
+});
+
+// Logout
+router.get('/logout', (req, res) => {
+    req.session.destroy(() => {
+        res.redirect('/');
     });
 });
 

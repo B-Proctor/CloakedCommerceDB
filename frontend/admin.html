@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="navbar.js" defer></script>
+</head>
+<body>
+    <h2>Admin Panel</h2>
+    <h3>Users</h3>
+    <div id="users"></div>
+
+    <script>
+    fetch('/admin/users')
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById('users');
+        data.forEach(user => {
+          div.innerHTML += `
+            <div class="card">
+              <p><strong>User:</strong> ${user.username} (${user.role})</p>
+              <button onclick="deleteUser(${user.user_id})">Delete</button>
+            </div>
+          `;
+        });
+      });
+
+    function deleteUser(id) {
+      fetch('/admin/remove-user/' + id, { method: 'DELETE' })
+        .then(() => location.reload());
+    }
+    </script>
+</body>
+</html>

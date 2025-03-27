@@ -1,14 +1,18 @@
-CREATE DATABASE IF NOT EXISTS cloakedcommerce;
-
+-- Create and select database
+DROP DATABASE IF EXISTS cloakedcommerce;
+CREATE DATABASE cloakedcommerce;
 USE cloakedcommerce;
 
+-- Users Table
 CREATE TABLE IF NOT EXISTS Users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('admin','trader') DEFAULT 'trader'
+    role ENUM('admin','trader') DEFAULT 'trader',
+    hash_key VARCHAR(16)
 );
 
+-- Products Table
 CREATE TABLE IF NOT EXISTS Products (
     product_id INT AUTO_INCREMENT PRIMARY KEY,
     product_name VARCHAR(100) NOT NULL,
@@ -17,6 +21,33 @@ CREATE TABLE IF NOT EXISTS Products (
     cost_c_double_prime DECIMAL(10, 2)
 );
 
+-- Equivalence Table
+CREATE TABLE IF NOT EXISTS Equivalence (
+    equivalence_id INT AUTO_INCREMENT PRIMARY KEY,
+    product1 INT,
+    product2 INT,
+    percentage DECIMAL(10, 2),
+    FOREIGN KEY (product1) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (product2) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Posts Table
+CREATE TABLE IF NOT EXISTS Posts (
+    post_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    partner_id INT,
+    product_offered INT,
+    product_requested INT,
+    amount_offered DECIMAL(10,2),
+    amount_requested DECIMAL(10,2),
+    is_fulfilled BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (partner_id) REFERENCES Users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (product_offered) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (product_requested) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Transactions Table
 CREATE TABLE IF NOT EXISTS Transactions (
     transaction_id INT AUTO_INCREMENT PRIMARY KEY,
     a_id INT,
@@ -39,23 +70,3 @@ CREATE TABLE IF NOT EXISTS Transactions (
     FOREIGN KEY (e_product_id) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS Posts (
-    post_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    partner_id INT,
-    product_offered INT,
-    product_requested INT,
-    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (partner_id) REFERENCES Users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (product_offered) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (product_requested) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Equivalence (
-    equivalence_id INT AUTO_INCREMENT PRIMARY KEY,
-    product1 INT,
-    product2 INT,
-    percentage DECIMAL(10, 2),
-    FOREIGN KEY (product1) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (product2) REFERENCES Products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
-);
