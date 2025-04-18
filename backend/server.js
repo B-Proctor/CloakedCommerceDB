@@ -3,6 +3,7 @@ const session = require('express-session');
 const cors = require('cors');
 const path = require('path');
 
+
 const app = express();
 const PORT = 3000;
 
@@ -26,6 +27,14 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/barter', barterRoutes);
 app.use('/admin', adminRoutes);
 
+app.get('/admin.html', (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'admin') {
+        return res.status(403).send('Access denied.');
+    }
+
+    res.sendFile(path.join(__dirname, '../secure_pages/admin.html'));
+});
+
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.get('/', (req, res) => {
@@ -35,3 +44,6 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
+
+
+

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Exchange Code</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="navbar.js" defer></script>
+</head>
+<body>
+    <main class="main-container">
+        <h2>Submit Your 8-Digit Code</h2>
+        <form id="verify-form">
+            <input type="text" id="code" maxlength="8" placeholder="Enter your 8-digit hash code" required>
+            <input type="submit" value="Submit Code">
+        </form>
+        <p id="result" class="mono"></p>
+    </main>
+
+    <script>
+        document.getElementById('verify-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const code = document.getElementById('code').value.trim();
+
+            fetch('/barter/submit-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            })
+                .then(res => res.text())
+                .then(msg => {
+                    document.getElementById('result').innerText = msg;
+                })
+                .catch(() => {
+                    document.getElementById('result').innerText = "Error verifying code.";
+                });
+        });
+    </script>
+</body>
+</html>

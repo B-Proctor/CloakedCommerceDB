@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Notifications</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="navbar.js" defer></script>
+    <style>
+        .notification {
+            border: 1px solid #ccc;
+            border-left: 5px solid #0077cc;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background-color: #f9f9f9;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+            .notification.unread {
+                border-left-color: #cc0000;
+                background-color: #fff3f3;
+            }
+
+            .notification.expanded .message {
+                max-height: 1000px;
+            }
+
+            .notification .message {
+                max-height: 60px;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+
+        .notification-buttons {
+            margin-top: 10px;
+            text-align: right;
+        }
+
+            .notification-buttons button {
+                margin-left: 8px;
+            }
+    </style>
+</head>
+<body>
+    <main class="main-container">
+        <h2>Your Notifications</h2>
+        <div id="notification-list">Loading...</div>
+    </main>
+
+    <script>
+        function loadNotifications() {
+            fetch('/barter/notifications/all')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('notification-list');
+                    container.innerHTML = '';
+
+                    if (data.length === 0) {
+                        container.innerHTML = "<p>No notifications found.</p>";
+                        return;
+                    }
+
+                    data.forEach(notif => {
+                        const box = document.createElement('div');
+                        box.className = 'notification' + (notif.is_read ? '' : ' unread');
+
+                        const date = new Date(notif.created_at).toLocaleString();
+
+                        box.innerHTML = `
+                  <p><strong>${date}</strong></p>
+                  <p class="message">${notif.message}</p>
+                  <div class="notification-buttons">
+                    ${!notif.is_read ? `<button onclick="markAsRead(event, ${notif.notification_id})">Mark as Read</button>` : ''}
+                    <button onclick="deleteNotification(event, ${notif.notification_id})">Delete</button>
+                  </div>
+                `;
+
+                        box.addEventListener('click', () => {
+                            box.classList.toggle('expanded');
+                        });
+
+                        container.appendChild(box);
+                    });
+                })
+                .catch(() => {
+                    document.getElementById('notification-list').innerHTML = "<p>Error loading notifications.</p>";
+                });
+        }
+
+        function markAsRead(id, container) {
+            fetch('/barter/notifications/mark-read', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notification_id: id })
+            }).then(() => {
+                container.classList.remove('unread');
+                fetchNotificationCount(); // Recount!
+            });
+        }
+
+        function deleteNotification(event, id) {
+            event.stopPropagation();
+            if (!confirm("Delete this notification?")) return;
+
+            fetch('/barter/notifications/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notification_id: id })
+            })
+                .then(() => loadNotifications());
+        }
+
+        loadNotifications();
+    </script>
+</body>
+</html>

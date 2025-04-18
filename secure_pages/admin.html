@@ -1,0 +1,320 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="navbar.js" defer></script>
+</head>
+<body>
+    <main class="main-container">
+        <h2 style="text-align: center;">Admin Dashboard</h2>
+
+        <!-- Tab Buttons -->
+        <div class="tab-buttons">
+            <button onclick="showTab('submissions')">Submissions</button>
+            <button onclick="showTab('products')">Products</button>
+            <button onclick="showTab('users')">Users</button>
+            <button onclick="showTab('transactions')">Transactions</button>
+        </div>
+
+        <!-- Tab Content Sections -->
+        <div id="tab-submissions" class="tab-section" style="display:block;">
+            <h3>Product Submissions</h3>
+            <div id="submission-container">Loading...</div>
+        </div>
+
+        <div id="tab-products" class="tab-section" style="display:none;">
+            <h3>Products</h3>
+            <div id="products-container">Coming soon...</div>
+        </div>
+
+        <div id="tab-users" class="tab-section" style="display:none;">
+            <h3>Users</h3>
+            <div id="users-container">Coming soon...</div>
+            <h3 style="margin-top: 30px;">Send Notification to a User</h3>
+            <form id="send-notification-form">
+                <label for="notify_user_id">User ID:</label>
+                <input type="number" id="notify_user_id" name="notify_user_id" required>
+
+                <label for="notify_message">Message:</label>
+                <textarea id="notify_message" name="notify_message" required></textarea>
+
+                <button type="submit">Send Notification</button>
+            </form>
+
+        </div>
+
+        <div id="tab-transactions" class="tab-section" style="display:none;">
+            <h3>Transactions</h3>
+            <div id="transactions-container">Coming soon...</div>
+        </div>
+    </main>
+
+    <script>
+
+        fetch('/auth/session')
+            .then(res => res.json())
+            .then(user => {
+                if (!user || user.role !== 'admin') {
+                    window.location.href = 'home.html'; // or login.html if you prefer
+                }
+            });
+
+
+        function showTab(tab) {
+            const tabs = ['submissions', 'products', 'users', 'transactions'];
+            tabs.forEach(t => {
+                document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+            });
+
+            if (tab === 'products') loadProducts();
+            if (tab === 'users') loadUsers();
+            if (tab === 'transactions') loadTransactions();
+        }
+
+        fetch('/admin/submissions')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('submission-container');
+                if (data.length === 0) {
+                    container.innerHTML = "<p>No pending submissions.</p>";
+                    return;
+                }
+
+                const table = document.createElement('table');
+                table.innerHTML = `
+                        <tr>
+                            <th>Product</th>
+                            <th>Description</th>
+                            <th>Suggested $</th>
+                            <th>Reason</th>
+                            <th>By User ID</th>
+                            <th>Action</th>
+                        </tr>
+                    `;
+
+                data.forEach(sub => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                            <td>${sub.product_name}</td>
+                            <td>${sub.description}</td>
+                            <td>${sub.suggested_value}</td>
+                            <td>${sub.reason}</td>
+                            <td>${sub.user_id}</td>
+                            <td>
+                                <button onclick="approveSubmission(${sub.submission_id})">Approve</button>
+                                <button onclick="denySubmission(${sub.submission_id})">Deny</button>
+                            </td>
+                        `;
+                    table.appendChild(row);
+                });
+
+                container.innerHTML = '';
+                container.appendChild(table);
+            });
+
+        function approveSubmission(id) {
+            fetch('/admin/approve-product', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            }).then(res => res.text()).then(msg => {
+                alert(msg);
+                location.reload();
+            });
+        }
+
+        function denySubmission(id) {
+            fetch('/admin/deny-product', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            }).then(res => res.text()).then(msg => {
+                alert(msg);
+                location.reload();
+            });
+        }
+
+        function loadProducts() {
+            fetch('/admin/products')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('products-container');
+                    container.innerHTML = '';
+
+                    if (data.length === 0) {
+                        container.innerHTML = "<p>No products available.</p>";
+                        return;
+                    }
+
+                    const table = document.createElement('table');
+                    table.innerHTML = `
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Base $</th>
+                                <th>c'</th>
+                                <th>c''</th>
+                                <th>Actions</th>
+                            </tr>
+                        `;
+
+                    data.forEach(p => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                                <td>${p.product_name}</td>
+                                <td>${p.description}</td>
+                                <td>${p.base_value}</td>
+                                <td>${p.cost_c_prime}</td>
+                                <td>${p.cost_c_double_prime}</td>
+                                <td><button onclick="deleteProduct(${p.product_id})">Delete</button></td>
+                            `;
+                        table.appendChild(row);
+                    });
+
+                    container.appendChild(table);
+                });
+        }
+
+        function deleteProduct(id) {
+            if (!confirm("Delete this product?")) return;
+
+            fetch('/admin/delete-product', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            }).then(res => res.text()).then(msg => {
+                alert(msg);
+                loadProducts();
+            });
+        }
+
+        function loadUsers() {
+            fetch('/admin/users')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('users-container');
+                    container.innerHTML = '';
+
+                    if (data.length === 0) {
+                        container.innerHTML = "<p>No users found.</p>";
+                        return;
+                    }
+
+                    const table = document.createElement('table');
+                    table.innerHTML = `
+                            <tr>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        `;
+
+                    data.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                                <td>${user.username}</td>
+                                <td>${user.role}</td>
+                                <td>
+                                    ${user.role === 'trader' ? `<button onclick="promoteUser(${user.user_id})">Promote</button>` : ''}
+                                    <button onclick="deleteUser(${user.user_id})">Delete</button>
+                                </td>
+                            `;
+                        table.appendChild(row);
+                    });
+
+                    container.appendChild(table);
+                });
+        }
+
+        function promoteUser(id) {
+            fetch('/admin/promote-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            }).then(res => res.text()).then(msg => {
+                alert(msg);
+                loadUsers();
+            });
+        }
+
+        function deleteUser(id) {
+            if (!confirm("Delete this user?")) return;
+
+            fetch('/admin/delete-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            }).then(res => res.text()).then(msg => {
+                alert(msg);
+                loadUsers();
+            });
+        }
+
+        function loadTransactions() {
+            fetch('/admin/transactions')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('transactions-container');
+                    container.innerHTML = '';
+
+                    if (data.length === 0) {
+                        container.innerHTML = "<p>No transactions yet.</p>";
+                        return;
+                    }
+
+                    const table = document.createElement('table');
+                    table.innerHTML = `
+                            <tr>
+                                <th>ID</th>
+                                <th>A-B</th>
+                                <th>X-Y</th>
+                                <th>Product P → E</th>
+                                <th>Status</th>
+                                <th>Hash</th>
+                            </tr>
+                        `;
+
+                    data.forEach(tx => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                                <td>${tx.transaction_id}</td>
+                                <td>${tx.a_id}-${tx.b_id}</td>
+                                <td>${tx.x_id}-${tx.y_id}</td>
+                                <td>${tx.p_product_id} → ${tx.e_product_id}</td> 
+                                <td>${tx.transaction_status}</td>
+                                <td>${tx.hash_code}</td>
+                            `;
+                        table.appendChild(row);
+                    });
+
+                    container.appendChild(table);
+                });
+        }
+
+        document.getElementById('send-notification-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const user_id = document.getElementById('notify_user_id').value;
+            const message = document.getElementById('notify_message').value;
+
+            fetch('/admin/send-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id, message })
+            })
+                .then(res => res.text())
+                .then(msg => {
+                    alert(msg);
+                    document.getElementById('send-notification-form').reset();
+                })
+                .catch(err => {
+                    alert("Failed to send notification.");
+                    console.error(err);
+                });
+        });
+
+    </script>
+</body>
+</html>

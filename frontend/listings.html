@@ -11,18 +11,28 @@
     <main class="main-container">
         <h2 style="text-align: center;">Barter Listings</h2>
 
-        <!-- Toggle Button -->
         <div id="create-toggle" style="display: none;">
             <button onclick="toggleForm()">+ Create New Listing</button>
+            <a href="submit_product.html" style="margin-left: 10px;">
+                <button type="button">+ Add New Product</button>
+            </a>
         </div>
+
 
         <!-- Form to create a new listing -->
         <section id="create-section" style="display: none; margin-bottom: 40px;">
             <h3>Create a New Listing</h3>
             <form id="barter-form">
-                <label for="partner_hash_key">Partner’s Anonymous Code:</label>
+                <label for="partner_hash_key">Partnerï¿½s Anonymous Code:</label>
                 <input type="text" id="partner_hash_key" name="partner_hash_key" required>
 
+                <div id="trade-quality-container" style="margin-top: 15px;">
+                    <label for="tradeQualityBar">Trade Quality:</label>
+                    <div style="background: #ccc; border-radius: 5px; width: 100%; height: 20px; position: relative;">
+                        <div id="tradeQualityBar" style="background: green; width: 0%; height: 100%; border-radius: 5px;"></div>
+                    </div>
+                    <small id="tradeQualityText">Start selecting products and quantities.</small>
+                </div>
 
                 <label for="product_offered">Product Offered:</label>
                 <select id="product_offered" name="product_offered" required></select>
@@ -50,11 +60,14 @@
     </main>
 
     <script>
+        let currentUserId = null;
+        let products = {};
+
         fetch('/auth/session')
             .then(res => res.json())
             .then(user => {
                 if (!user || !user.user_id) {
-                    window.location.href = 'login.html'; // redirect to login if not logged in
+                    window.location.href = 'login.html';
                 } else {
                     currentUserId = user.user_id;
                     document.getElementById('create-toggle').style.display = 'block';
@@ -62,79 +75,81 @@
                 }
             });
 
-        let currentUserId = null;
-
-        // Check login and load products if logged in
-        fetch('/auth/session')
-            .then(res => res.json())
-            .then(user => {
-                console.log('Session:', user);
-                if (user && user.user_id) {
-                    currentUserId = user.user_id;
-                    document.getElementById('create-toggle').style.display = 'block';
-                    loadProducts();
-                }
-            });
-
-        // Load product options
         function loadProducts() {
             fetch('/barter/products')
                 .then(res => res.json())
-                .then(products => {
-                    const offeredSelect = document.getElementById('product_offered');
-                    const requestedSelect = document.getElementById('product_requested');
-
-                    offeredSelect.innerHTML = '';
-                    requestedSelect.innerHTML = '';
-
-                    products.forEach(p => {
-                        const o = document.createElement('option');
+                .then(data => {
+                    products = {};
+                    const offered = document.getElementById('product_offered');
+                    const requested = document.getElementById('product_requested');
+                    offered.innerHTML = '';
+                    requested.innerHTML = '';
+                    data.forEach(p => {
+                        products[p.product_id] = p;
+                        let o = document.createElement('option');
                         o.value = p.product_id;
                         o.textContent = p.product_name;
-
-                        const r = o.cloneNode(true);
-                        offeredSelect.appendChild(o);
-                        requestedSelect.appendChild(r);
+                        let r = o.cloneNode(true);
+                        offered.appendChild(o);
+                        requested.appendChild(r);
                     });
                 });
         }
 
-        // Load all posts
-        function loadPosts() {
-            fetch('/barter/posts')
-                .then(res => res.json())
-                .then(posts => {
-                    const container = document.getElementById('posts-container');
-                    container.innerHTML = '';
+        function updateTradeBar() {
+            const offerId = parseInt(document.getElementById('product_offered').value);
+            const requestId = parseInt(document.getElementById('product_requested').value);
+            const amtOffered = parseFloat(document.getElementById('amount_offered').value);
+            const amtRequested = parseFloat(document.getElementById('amount_requested').value);
 
-                    if (posts.length === 0) {
-                        container.innerHTML = '<p>No active listings found.</p>';
-                        return;
-                    }
+            if (!products[offerId] || !products[requestId]) return;
 
-                    posts.forEach(post => {
-                        const div = document.createElement('div');
-                        div.classList.add('card');
-                        div.innerHTML = `
-              
-                <p><strong>Offering:</strong> Product #${post.product_offered} (x${post.amount_offered})</p>
-                <p><strong>Requesting:</strong> Product #${post.product_requested} (x${post.amount_requested})</p>
-              `;
-                        container.appendChild(div);
-                    });
-                });
+            const offeredValue = amtOffered * (products[offerId].base_value || 1);
+            const requestedValue = amtRequested * (products[requestId].base_value || 1);
+
+            const ratio = Math.min(offeredValue / requestedValue, requestedValue / offeredValue);
+            const percent = Math.round(ratio * 100);
+
+            const bar = document.getElementById('tradeQualityBar');
+            const text = document.getElementById('tradeQualityText');
+
+            bar.style.width = percent + '%';
+            bar.style.backgroundColor = percent > 90 ? 'green' : percent > 70 ? 'orange' : 'red';
+            text.textContent = `Trade Quality: ${percent}%`;
+
+            // Warn if user is offering more than they get
+            const lossPercent = ((offeredValue - requestedValue) / offeredValue) * 100;
+            if (offeredValue > requestedValue && lossPercent > 3) {
+                text.textContent += ` â€” Warning: You're offering $${offeredValue.toFixed(2)} and requesting $${requestedValue.toFixed(2)}. Loss of ${Math.round(lossPercent)}%.`;
+            }
         }
 
-        // Submit new listing
+        ['product_offered', 'product_requested', 'amount_offered', 'amount_requested'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateTradeBar);
+        });
+
         document.getElementById('barter-form').addEventListener('submit', function (e) {
             e.preventDefault();
 
+            const offerId = parseInt(document.getElementById('product_offered').value);
+            const requestId = parseInt(document.getElementById('product_requested').value);
+            const amtOffered = parseFloat(document.getElementById('amount_offered').value);
+            const amtRequested = parseFloat(document.getElementById('amount_requested').value);
+            const offeredValue = amtOffered * (products[offerId]?.base_value || 1);
+            const requestedValue = amtRequested * (products[requestId]?.base_value || 1);
+            const lossPercent = ((offeredValue - requestedValue) / offeredValue) * 100;
+
+            if (offeredValue > requestedValue && lossPercent > 3) {
+                const confirmLoss = confirm(`You're offering $${offeredValue.toFixed(2)} and only getting $${requestedValue.toFixed(2)} in return. Loss: ${Math.round(lossPercent)}%. Proceed?`);
+                if (!confirmLoss) return;
+            }
+
             const data = {
                 partner_hash_key: document.getElementById('partner_hash_key').value,
-                product_offered: document.getElementById('product_offered').value,
-                amount_offered: document.getElementById('amount_offered').value,
-                product_requested: document.getElementById('product_requested').value,
-                amount_requested: document.getElementById('amount_requested').value
+                product_offered: offerId,
+                amount_offered: amtOffered,
+                product_requested: requestId,
+                amount_requested: amtRequested
             };
 
             fetch('/barter/posts', {
@@ -146,22 +161,46 @@
                     if (res.ok) {
                         alert('Listing created successfully.');
                         loadPosts();
-                        toggleForm(); // Optional: auto-hide form
+                        toggleForm();
                     } else {
-                        alert('Error creating listing.');
+                        res.text().then(t => alert('Error: ' + t));
                     }
                 });
         });
 
-        // Toggle form visibility
         function toggleForm() {
             const form = document.getElementById('create-section');
-            form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
         }
 
-        // Load all listings initially
+        function loadPosts() {
+            fetch('/barter/posts')
+                .then(res => res.json())
+                .then(posts => {
+                    const container = document.getElementById('posts-container');
+                    container.innerHTML = '';
+                    if (posts.length === 0) {
+                        container.innerHTML = '<p>No active listings found.</p>';
+                        return;
+                    }
+
+                    posts.forEach(post => {
+                        const div = document.createElement('div');
+                        div.classList.add('card');
+                        div.innerHTML = `
+                            <p><strong>Offering:</strong> Product #${post.product_offered} (x${post.amount_offered})</p>
+                            <p><strong>Requesting:</strong> Product #${post.product_requested} (x${post.amount_requested})</p>
+                        `;
+                        container.appendChild(div);
+                    });
+                });
+        }
+
         loadPosts();
     </script>
+
+
+
 
 </body>
 </html>
