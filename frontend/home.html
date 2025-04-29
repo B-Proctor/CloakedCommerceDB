@@ -1,75 +1,242 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Your Profile</title>
+    <meta charset="UTF-8">
+    <title>Your Profile | CloakedCommerceDB</title>
     <link rel="stylesheet" href="style.css">
     <script src="navbar.js" defer></script>
+    <style>
+        body {
+            background-color: #0f2233;
+            color: #E8ECEF;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .profile-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: #1B3A4B;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+            .card h3 {
+                margin-top: 0;
+                color: #78C0E0;
+            }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .avatar {
+            background: #0077cc;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin: 8px 0;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .modal-content {
+            background: #1B3A4B;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            color: #fff;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .mono {
+            font-family: monospace;
+            font-size: 15px;
+            color: #ccc;
+        }
+    </style>
 </head>
 <body>
-
-
-    <!-- Profile Content -->
     <main class="profile-container">
-        <h2>Your Profile</h2>
+
         <div id="profile"></div>
+
     </main>
 
-    <!-- Profile Dropdown Session Fetch -->
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
     <script>
+        // Navbar Profile Update
         fetch('/auth/session')
             .then(res => res.json())
             .then(user => {
                 const nav = document.getElementById('nav-right');
                 if (user && user.username) {
                     nav.innerHTML = `
-                <div class="profile-menu">
-                  <span>Hello, ${user.username} ▾</span>
-                  <div class="profile-dropdown">
-                    <a href="home.html">Profile</a>
-                    <a href="/auth/logout">Logout</a>
-                  </div>
-                </div>
-              `;
+            <div class="profile-menu">
+              <span>Hello, ${user.username} ▾</span>
+              <div class="profile-dropdown">
+                <a href="home.html">Profile</a>
+                <a href="/auth/logout">Logout</a>
+              </div>
+            </div>
+          `;
                 } else {
-                    nav.innerHTML = '<a href="login.html">Login</a> <a href="register.html">Register</a>';
+                    nav.innerHTML = `<a href="login.html">Login</a> <a href="register.html">Register</a>`;
                 }
             });
-    </script>
 
-    <!-- Profile Data Script -->
-    <script>
-        fetch('/dashboard')
+        // Profile Page
+        fetch('/barter/dashboard')
             .then(res => res.json())
             .then(data => {
                 const profile = document.getElementById('profile');
+                const initials = data.user.username.slice(0, 2).toUpperCase();
                 const unfinished = data.posts.filter(p => !p.is_fulfilled);
                 const finished = data.trades.filter(t => t.completed);
 
                 profile.innerHTML = `
-              <div class="card">
-                <h3>Anonymous Hash Key:</h3>
-                <p class="mono">${data.user.hash_key}</p>
-              </div>
+          <div class="profile-header">
+            <div class="avatar">${initials}</div>
+            <div>
+              <h2>${data.user.username}</h2>
+              <p class="mono">Anonymous ID: ${data.user.hash_key}</p>
+              <p>Total Barters: ${finished.length} | Active Posts: ${unfinished.length}</p>
+            </div>
+          </div>
 
-              <div class="card">
-                <h3>Current (Unfinished) Barters</h3>
-                <ul>
-                  ${unfinished.length ? unfinished.map(p => `
-                    <li>Post #${p.post_id}: Offering Product ${p.product_offered} → Requesting Product ${p.product_requested}</li>
-                  `).join('') : '<li>None</li>'}
-                </ul>
-              </div>
+          <div class="card">
+            <h3>Active Barters</h3>
+            <ul>
+              ${unfinished.length ? unfinished.map(p => `
+                <li onclick="showPostModal(${p.post_id}, ${p.product_offered}, ${p.amount_offered}, ${p.product_requested}, ${p.amount_requested})">
+                  Post #${p.post_id}: Offering ${p.amount_offered}×Product ${p.product_offered} → ${p.amount_requested}×Product ${p.product_requested}
+                </li>
+              `).join('') : '<li>No active barters.</li>'}
+            </ul>
+          </div>
 
-              <div class="card">
-                <h3>Past Barters</h3>
-                <ul>
-                  ${finished.length ? finished.map(t => `
-                    <li>Transaction #${t.transaction_id}: Exchange Code ${t.hash_code}</li>
-                  `).join('') : '<li>None</li>'}
-                </ul>
-              </div>
-            `;
+          <div class="card">
+            <h3>Completed Trades</h3>
+            <ul>
+              ${finished.length ? finished.map(t => `
+                <li onclick="showTradeModal('${t.transaction_id}', '${t.hash_code}')">
+                  Transaction #${t.transaction_id} | Code: ${t.hash_code.slice(0, 8)}...
+                </li>
+              `).join('') : '<li>No completed trades.</li>'}
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>Notifications</h3>
+            <div id="notification-list">Loading...</div>
+          </div>
+        `;
+
+                loadNotifications();
             });
+
+        function loadNotifications() {
+            fetch('/barter/notifications/all')
+                .then(res => res.json())
+                .then(notifs => {
+                    const container = document.getElementById('notification-list');
+                    if (!notifs.length) {
+                        container.innerHTML = '<p>No notifications.</p>';
+                        return;
+                    }
+                    container.innerHTML = '<ul>' + notifs.slice(0, 5).map(n => `<li>${n.message}</li>`).join('') + '</ul>';
+                });
+        }
+
+        function showPostModal(postId, productOffered, amountOffered, productRequested, amountRequested) {
+            const body = document.getElementById('modal-body');
+            body.innerHTML = `
+        <h3>Active Barter Details</h3>
+        <p><strong>Post ID:</strong> ${postId}</p>
+        <p><strong>Offering:</strong> ${amountOffered} × Product #${productOffered}</p>
+        <p><strong>Requesting:</strong> ${amountRequested} × Product #${productRequested}</p>
+      `;
+            openModal();
+        }
+
+        function showTradeModal(transactionId, hashCode) {
+            const body = document.getElementById('modal-body');
+            body.innerHTML = `
+        <h3>Trade Completion Details</h3>
+        <p><strong>Transaction ID:</strong> ${transactionId}</p>
+        <p><strong>Exchange Hash:</strong> ${hashCode}</p>
+      `;
+            openModal();
+        }
+
+        function openModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        }
+
+        // Optional: click outside to close
+        window.onclick = function (event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
     </script>
 
 </body>

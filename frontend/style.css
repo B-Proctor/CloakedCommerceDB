@@ -1,127 +1,265 @@
 ﻿/* ===== Global Body Styling ===== */
 body {
     font-family: 'Segoe UI', sans-serif;
-    background-color: #f4f4f4;
+    background-color: #152A36; /* Softer navy */
     margin: 0;
     padding: 0;
-    color: #222;
+    color: #E8ECEF;
     line-height: 1.6;
 }
+  .modal-wrapper {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #1B3A4B;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 22px;
+        }
+        body.modal-open {
+            overflow: hidden;
+        }
+        .modal-footer {
+            text-align: right;
+        }
+   
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+            .modal.show {
+                display: block;
+                opacity: 1;
+            }
+
+        /* Close X Button */
+        .close-x {
+            color: #E8ECEF;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+            .close-x:hover {
+                color: #f1f1f1;
+            }
 
 /* ===== Navbar Layout ===== */
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #333;
-    color: white;
-    padding: 10px 20px;
-    flex-wrap: wrap;
+    background-color: #122E3F;
+    padding: 14px 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .nav-left {
-    flex: 1;
     display: flex;
     align-items: center;
+    gap: 12px;
 }
 
-    .nav-left strong {
-        font-weight: bold;
-    }
+.logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+}
+
+.brand {
+    font-size: 20px;
+    font-weight: bold;
+    color: #E8ECEF;
+}
 
 .nav-center {
-    flex: 1;
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    gap: 25px;
 }
 
+.nav-link {
+    color: #E8ECEF;
+    font-size: 16px;
+    text-decoration: none;
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+    .nav-link:hover {
+        color: #1FA1A1;
+    }
+
+    .nav-link.active-link::after {
+        content: '';
+        display: block;
+        height: 2px;
+        background-color: #1FA1A1;
+        position: absolute;
+        bottom: -6px;
+        left: 0;
+        right: 0;
+    }
+
 .nav-right {
-    flex: 1;
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    gap: 15px;
+}
+.nav-user-area {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+/* ===== Profile Dropdown (Fixed) ===== */
+.profile-menu {
+    position: relative;
+    display: flex;
     align-items: center;
 }
 
-.navbar a {
-    color: white;
-    text-decoration: none;
-    margin-left: 15px;
-    font-weight: normal;
+.profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.25s ease;
 }
 
-    .navbar a:hover {
-        text-decoration: underline;
+    .profile-trigger:hover {
+        background-color: #263F51;
     }
 
-/* ===== Profile Dropdown ===== */
-.profile-menu {
-    position: relative;
-    display: inline-block;
+.avatar-small {
+    background: #1FA1A1;
+    color: #0F2B3A;
+    font-weight: bold;
+    font-size: 13px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.profile-trigger:hover .avatar-small {
+    background: #00C1C1;
 }
 
 .profile-dropdown {
-    display: none;
     position: absolute;
+    top: 44px;
     right: 0;
-    background-color: #fff;
-    color: #333;
-    min-width: 150px;
-    box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
-    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    background: #1B3A4B;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    min-width: 180px;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-5px);
+    pointer-events: none;
+    transition: all 0.2s ease;
 }
 
     .profile-dropdown a {
         padding: 10px 15px;
-        display: block;
         text-decoration: none;
-        color: #333;
+        color: #E8ECEF;
+        transition: background 0.2s ease;
     }
 
         .profile-dropdown a:hover {
-            background-color: #f1f1f1;
+            background: #1FA1A1;
+            color: #0F2B3A;
         }
 
+/* Reveal dropdown when hovering over entire profile menu */
 .profile-menu:hover .profile-dropdown {
-    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
+
 
 /* ===== Main Content Wrapper ===== */
 .main-container {
-    max-width: 900px;
-    margin: 60px auto;
-    padding: 0 25px;
+    max-width: 960px;
+    margin: 80px auto;
+    padding: 0 30px;
 }
 
-/* ===== Info Blocks (Homepage Sections) ===== */
 .info-block {
-    margin-bottom: 60px;
+    background: linear-gradient(to bottom right, #193543, #1F3F4D);
+    border-left: 5px solid #1FA1A1;
+    padding: 30px;
+    margin-bottom: 40px;
+    border-radius: 10px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
+
 
     .info-block h2 {
         font-size: 1.5rem;
-        color: #111;
+        color: #1FA1A1;
         margin-bottom: 15px;
     }
 
     .info-block p {
         margin: 12px 0;
         font-size: 1.05rem;
-        color: #333;
+        color: #E8ECEF;
     }
 
 /* ===== Card Layouts ===== */
 .card {
-    background-color: #fff;
+    background-color: #1B3A4B;
     padding: 20px 30px;
     border-radius: 10px;
     margin-bottom: 30px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
     .card h3 {
         margin-top: 0;
-        color: #333;
+        color: #E8ECEF;
     }
 
 /* ===== Lists ===== */
@@ -138,19 +276,22 @@ ul {
 .mono {
     font-family: monospace;
     font-size: 1.2em;
-    color: #444;
+    color: #A3D4D4;
 }
 
 /* ===== Forms & Inputs ===== */
 input[type="text"],
 input[type="password"],
-input[type="number"] {
+input[type="number"],
+textarea {
     padding: 10px;
     margin: 8px 0;
     width: 100%;
     box-sizing: border-box;
     border: 1px solid #ccc;
     border-radius: 6px;
+    background-color: #E8ECEF;
+    color: #0F2B3A;
 }
 
 /* ===== Buttons ===== */
@@ -158,8 +299,8 @@ button,
 input[type="submit"] {
     padding: 10px 15px;
     font-size: 1rem;
-    background-color: #333;
-    color: white;
+    background-color: #1FA1A1;
+    color: #0F2B3A;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -168,18 +309,51 @@ input[type="submit"] {
 
     button:hover,
     input[type="submit"]:hover {
-        background-color: #555;
+        background-color: #159090;
     }
-
-.notification-badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background-color: red;
-    color: white;
-    font-size: 12px;
-    padding: 2px 6px;
-    border-radius: 50%;
-    display: none;
+    
+/* ===== Notification Badge ===== */
+#notification-bell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+    #notification-bell img {
+        width: 24px;
+        height: 24px;
+    }
+.notification-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background-color: #FF4B4B;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 999px;
+}
+.ticker-wrapper {
+    width: 100%;
+    overflow: hidden;
+    background-color: #0f2233;
+    border-top: 2px solid #0077cc;
+    border-bottom: 2px solid #0077cc;
+    padding: 5px 0;
+    position: relative;
+}
+
+.ticker-track {
+    display: flex;
+    will-change: transform;
+    white-space: nowrap;
+}
+
+.ticker {
+    font-size: 18px;
+    color: #E8ECEF;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding-right: 100px; /* Gap between repeat */
+}

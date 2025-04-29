@@ -11,14 +11,14 @@
             border-left: 5px solid #0077cc;
             margin-bottom: 15px;
             padding: 10px 15px;
-            background-color: #f9f9f9;
+            background-color: #1B3A4B;
             transition: background 0.2s;
             cursor: pointer;
         }
 
             .notification.unread {
                 border-left-color: #cc0000;
-                background-color: #fff3f3;
+                background-color: #1B3A4B;
             }
 
             .notification.expanded .message {
@@ -70,7 +70,7 @@
                   <p><strong>${date}</strong></p>
                   <p class="message">${notif.message}</p>
                   <div class="notification-buttons">
-                    ${!notif.is_read ? `<button onclick="markAsRead(event, ${notif.notification_id})">Mark as Read</button>` : ''}
+                    ${!notif.is_read ? `<button onclick="markAsRead(event, this, ${notif.notification_id})"> Mark as Read </button>` : ''}
                     <button onclick="deleteNotification(event, ${notif.notification_id})">Delete</button>
                   </div>
                 `;
@@ -86,17 +86,21 @@
                     document.getElementById('notification-list').innerHTML = "<p>Error loading notifications.</p>";
                 });
         }
-
-        function markAsRead(id, container) {
+        function markAsRead(event, element, id) {
+            event.stopPropagation();
             fetch('/barter/notifications/mark-read', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ notification_id: id })
             }).then(() => {
-                container.classList.remove('unread');
-                fetchNotificationCount(); // Recount!
+                element.closest('.notification').classList.remove('unread');
+                fetchNotificationCount();
             });
         }
+
+
+
+
 
         function deleteNotification(event, id) {
             event.stopPropagation();

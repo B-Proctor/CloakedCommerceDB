@@ -23,7 +23,7 @@
         <section id="create-section" style="display: none; margin-bottom: 40px;">
             <h3>Create a New Listing</h3>
             <form id="barter-form">
-                <label for="partner_hash_key">Partner�s Anonymous Code:</label>
+                <label for="partner_hash_key">Partner's Anonymous Code:</label>
                 <input type="text" id="partner_hash_key" name="partner_hash_key" required>
 
                 <div id="trade-quality-container" style="margin-top: 15px;">
@@ -58,6 +58,18 @@
             </div>
         </section>
     </main>
+
+    <div id="offerModal" class="modal">
+        <div class="modal-wrapper">
+            <div class="modal-content">
+                <span class="close-x" onclick="closeModal()">×</span>
+                <h3 id="modalTitle">Offer Details</h3>
+                <div id="modalBody"></div>
+                <div class="modal-footer"></div>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         let currentUserId = null;
@@ -95,6 +107,7 @@
                     });
                 });
         }
+
 
         function updateTradeBar() {
             const offerId = parseInt(document.getElementById('product_offered').value);
@@ -172,9 +185,48 @@
             const form = document.getElementById('create-section');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
         }
+        function openModal(post) {
+            const offeredProduct = products[post.product_offered]?.product_name || `Product #${post.product_offered}`;
+            const requestedProduct = products[post.product_requested]?.product_name || `Product #${post.product_requested}`;
+
+            const modal = document.getElementById('offerModal');
+            document.getElementById('modalTitle').innerText = `Offer Details`;
+            document.getElementById('modalBody').innerHTML = `
+        <p><strong>Offering:</strong> ${offeredProduct} (x${post.amount_offered})</p>
+        <p><strong>Requesting:</strong> ${requestedProduct} (x${post.amount_requested})</p>
+    `;
+
+            modal.style.display = 'block';
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+
+            document.body.classList.add('modal-open');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('offerModal');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+            }, 300);
+        }
+
+        document.getElementById('offerModal').addEventListener('click', function (event) {
+            const modalContent = document.querySelector('.modal-content');
+            if (!modalContent.contains(event.target)) {
+                closeModal();
+            }
+        });
+
+
+
+
 
         function loadPosts() {
             fetch('/barter/posts')
+
                 .then(res => res.json())
                 .then(posts => {
                     const container = document.getElementById('posts-container');
@@ -187,10 +239,12 @@
                     posts.forEach(post => {
                         const div = document.createElement('div');
                         div.classList.add('card');
+                        div.style.cursor = 'pointer';
                         div.innerHTML = `
-                            <p><strong>Offering:</strong> Product #${post.product_offered} (x${post.amount_offered})</p>
-                            <p><strong>Requesting:</strong> Product #${post.product_requested} (x${post.amount_requested})</p>
-                        `;
+                                        <p><strong>Offering:</strong> Product #${post.product_offered} (x${post.amount_offered})</p>
+                                        <p><strong>Requesting:</strong> Product #${post.product_requested} (x${post.amount_requested})</p>
+                                    `;
+                        div.addEventListener('click', () => openModal(post));
                         container.appendChild(div);
                     });
                 });

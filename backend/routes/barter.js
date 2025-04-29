@@ -3,6 +3,12 @@ const router = express.Router();
 const db = require('../db');
 const crypto = require('crypto');
 
+
+// Helper function to insert a notification
+ function notifyUser(userId, message) {
+     db.query('INSERT INTO Notifications (user_id, message, is_read, created_at) VALUES (?, ?, 0, NOW())', [userId, message]);
+}
+
 // Middleware: Require login
 function requireLogin(req, res, next) {
     if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -34,7 +40,7 @@ router.get('/posts/:id', (req, res) => {
     });
 });
 
-router.post('/posts', requireLogin, (req, res) => {
+router.post('/posts', requireLogin, async (req, res) => {
     const user_id = req.session.user.user_id;
     const {
         partner_hash_key,
@@ -155,8 +161,14 @@ router.post('/posts', requireLogin, (req, res) => {
                         }
 
                         console.log("Transaction created successfully.");
+                         notifyUser(user_id, `Your verification code (first half): ${hash.slice(0, 8)}`);
+                         notifyUser(match.partner_id, `Your verification code (second half): ${hash.slice(8)}`);
                         db.query(`UPDATE Posts SET is_fulfilled = 1 WHERE post_id IN (?, ?)`, [newPostId, match.post_id]);
                         return res.status(200).send('Barter matched and transaction created.');
+                        // Notify A and Y with their verification code halves
+
+
+
                     });
                 });
             });
@@ -164,7 +176,39 @@ router.post('/posts', requireLogin, (req, res) => {
     });
 });
 
+// Dashboard API
+router.get('/dashboard', requireLogin, (req, res) => {
+    const userId = req.session.user.user_id;
 
+    // Fetch user's posts
+    db.query('SELECT * FROM Posts WHERE user_id = ?', [userId], (err, posts) => {
+        if (err) {
+            console.error('Error fetching posts:', err);
+            return res.status(500).send('Error fetching posts');
+        }
+
+        // Fetch user's transactions
+        db.query(`
+            SELECT * FROM Transactions
+            WHERE a_id = ? OR b_id = ? OR x_id = ? OR y_id = ?
+        `, [userId, userId, userId, userId], (err2, trades) => {
+            if (err2) {
+                console.error('Error fetching transactions:', err2);
+                return res.status(500).send('Error fetching transactions');
+            }
+
+            // Now send both
+            res.json({
+                user: req.session.user,
+                posts: posts,
+                trades: trades.map(trade => ({
+                    ...trade,
+                    completed: trade.transaction_status === 'complete'
+                }))
+            });
+        });
+    });
+});
 
 
 // Fetch code notifications for a user
@@ -195,6 +239,26 @@ router.get('/notifications', requireLogin, (req, res) => {
 
         res.json(messages);
     });
+});
+router.post('/notifications/mark-read', requireLogin, (req, res) => {
+    const { notification_id } = req.body;
+    const user_id = req.session.user.user_id;
+
+    if (!notification_id) {
+        return res.status(400).send('Missing notification ID.');
+    }
+
+    db.query(
+        'UPDATE Notifications SET is_read = TRUE WHERE notification_id = ? AND user_id = ?',
+        [notification_id, user_id],
+        (err) => {
+            if (err) {
+                console.error('Error marking notification as read:', err);
+                return res.status(500).send('Failed to mark as read.');
+            }
+            res.send('Notification marked as read.');
+        }
+    );
 });
 
 // Submit a code from A or Y
@@ -237,15 +301,25 @@ router.post('/submit-code', (req, res) => {
 
                 const complete = finalCheck[0].a_half_sent && finalCheck[0].y_half_sent;
                 if (complete) {
-                    db.query(`UPDATE Transactions SET transaction_status = 'complete' WHERE transaction_id = ?`, [tx.transaction_id]);
+                    db.query(`UPDATE Transactions SET transaction_status = 'complete' WHERE transaction_id = ?`, [tx.transaction_id], (err4) => {
+                        if (err4) {
+                            console.error('Failed to update transaction status to complete:', err4);
+                        } else {
+                            notifyUser(tx.a_id, 'Trade completed successfully! Thank you for using CloakedCommerceDB.');
+                            notifyUser(tx.y_id, 'Trade completed successfully! Thank you for using CloakedCommerceDB.');
+                        }
+                    });
                     return res.status(200).send("Code accepted. Trade completed.");
                 }
+
 
                 return res.status(200).send("Code accepted. Waiting for the other party.");
             });
         });
     });
 });
+
+
 
 
 // Submit a product suggestion request
@@ -287,6 +361,7 @@ router.get('/notifications/all', requireLogin, (req, res) => {
     );
 });
 
+
 router.post('/notifications/delete', requireLogin, (req, res) => {
     const { notification_id } = req.body;
 
@@ -309,6 +384,31 @@ router.get('/notifications/unread-count', requireLogin, (req, res) => {
         (err, results) => {
             if (err) return res.status(500).json({ error: 'Failed to fetch count.' });
             res.json({ unread: results[0].unread });
+        }
+    );
+});
+
+router.get('/recent-trades', (req, res) => {
+    db.query(
+        `SELECT
+          t.amount_p,
+          t.amount_e,
+          p1.product_name AS p_product_name,
+          p2.product_name AS e_product_name,
+          p1.base_value AS p_base_value,
+          p2.base_value AS e_base_value
+        FROM Transactions t
+        JOIN Products p1 ON t.p_product_id = p1.product_id
+        JOIN Products p2 ON t.e_product_id = p2.product_id
+        WHERE t.transaction_status = 'complete'
+        ORDER BY t.transaction_id DESC
+        LIMIT 5`,
+        (err, results) => {
+            if (err) {
+                console.error('Error fetching recent trades:', err);
+                return res.status(500).json({ error: 'Failed to fetch recent trades.' });
+            }
+            res.json(results);
         }
     );
 });

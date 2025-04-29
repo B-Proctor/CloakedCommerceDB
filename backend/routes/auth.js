@@ -30,8 +30,14 @@ router.post('/login', (req, res) => {
     const { username, password } = req.body;
 
     db.query('SELECT * FROM Users WHERE username = ?', [username], async (err, results) => {
-        if (err || results.length === 0) {
-            alert('Login failed. Check your credentials.');
+        if (err) {
+            console.error('Database error during login:', err);
+            return res.status(500).send('Internal server error.');
+        }
+
+        if (results.length === 0) {
+            console.log('Login failed: no such user.');
+            return res.status(401).send('Invalid username or password.');
         }
 
         const user = results[0];
@@ -44,7 +50,7 @@ router.post('/login', (req, res) => {
                 role: user.role,
                 hash_key: user.hash_key
             };
-            res.redirect("/index.html")
+            res.redirect("/index.html");
         } else {
             res.status(401).send('Invalid username or password.');
         }

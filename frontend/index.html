@@ -9,8 +9,24 @@
 
 
     <!-- HOMEPAGE CONTENT -->
-    <main class="main-container">
-        <section class="info-block">
+    <main class="main-container" style="text-align: center;">
+        <section style="margin-top: 30px;">
+            <!-- Ticker Bar -->
+            <div class="ticker-wrapper">
+                <div class="ticker-track" id="ticker-track">
+                    <div class="ticker" id="ticker-text">Loading trades...</div>
+                    <div class="ticker" id="ticker-text-clone">Loading trades...</div>
+                </div>
+            </div>
+
+
+        </section>
+
+        <!-- Logo (Centered Above Content) -->
+        <img src="assets/ccdblogo.png" alt="CloakedCommerceDB Logo" width="500" height="500" style="margin-bottom: 30px;">
+
+        <!-- Keep the rest of your content untouched -->
+        <section class="info-block" style="text-align: left;">
             <h2>What Cloaked Commerce Does</h2>
             <p>
                 Cloaked Commerce lets two pairs of people trade items secretly, without knowing each other’s names.
@@ -20,7 +36,7 @@
             </p>
         </section>
 
-        <section class="info-block">
+        <section class="info-block" style="text-align: left;">
             <h2>How Cloaked Commerce Works</h2>
             <p>
                 You (person X) sign up and post anonymously that you have a bicycle (P) to trade for a book (E), and say your partner Y will receive the book.
@@ -36,30 +52,99 @@
                 we make sure the book’s value covers it. This way, everyone gets a fair trade, stays private, and the exchange is safe.
             </p>
         </section>
+
     </main>
 
 
-    <!-- NAVBAR DROPDOWN SESSION JS -->
+
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const track = document.getElementById('ticker-track');
+            const wrapper = document.querySelector('.ticker-wrapper');
+            const ticker1 = document.getElementById('ticker-text');
+            const ticker2 = document.getElementById('ticker-text-clone');
+
+            let speed = 0.04; // px/ms
+            let lastTimestamp = null;
+            let position = 0;
+
+            function animateTicker(timestamp) {
+                if (!lastTimestamp) lastTimestamp = timestamp;
+                const delta = timestamp - lastTimestamp;
+                lastTimestamp = timestamp;
+
+                position -= delta * speed;
+
+                const tickerWidth = ticker1.offsetWidth;
+
+                if (position <= -tickerWidth) {
+                    position += tickerWidth;
+                }
+
+                track.style.transform = `translateX(${position}px)`;
+
+                requestAnimationFrame(animateTicker);
+            }
+
+            wrapper.addEventListener('mouseenter', () => {
+                speed = 0.01; // Slow down on hover
+            });
+
+            wrapper.addEventListener('mouseleave', () => {
+                speed = 0.04; // Speed up again
+            });
+
+            requestAnimationFrame(animateTicker);
+        });
+
+
+
+
+
+        function loadTicker() {
+            fetch('/barter/recent-trades')
+                .then(res => res.json())
+                .then(trades => {
+                    if (trades.length === 0) {
+                        document.getElementById('ticker-text').textContent = "No recent trades yet. Start trading today!";
+                        return;
+                    }
+
+                    const tickerContent = trades.map(t => {
+                        const totalValue = (t.amount_p * t.p_base_value + t.amount_e * t.e_base_value).toFixed(2);
+                        return `(${t.amount_p}x) ${t.p_product_name} was traded for (${t.amount_e}x) ${t.e_product_name} | Total Value: $${totalValue}`;
+                    }).join("  ⚡  ");
+
+                    document.getElementById('ticker-text').textContent = tickerContent;
+                })
+                .catch(() => {
+                    document.getElementById('ticker-text').textContent = "Unable to load trades.";
+                });
+        }
+
+
+        loadTicker();
+
+
         fetch('/auth/session')
             .then(res => res.json())
             .then(user => {
                 const nav = document.getElementById('nav-right');
                 if (user && user.username) {
                     nav.innerHTML = `
-                          <div class="profile-menu">
-                            <span>Hello, ${user.username} ▾</span>
-                            <div class="profile-dropdown">
-                              <a href="home.html">Profile</a>
-                              <a href="/auth/logout">Logout</a>
-                            </div>
-                          </div>
-                        `;
+                              <div class="profile-menu">
+                                <span>Hello, ${user.username} ▾</span>
+                                <div class="profile-dropdown">
+                                  <a href="home.html">Profile</a>
+                                  <a href="/auth/logout">Logout</a>
+                                </div>
+                              </div>
+                            `;
                 } else {
                     nav.innerHTML = `
-                          <a href="login.html">Login</a>
-                          <a href="register.html">Register</a>
-                        `;
+                              <a href="login.html">Login</a>
+                              <a href="register.html">Register</a>
+                            `;
                 }
             });
     </script>
